@@ -69,17 +69,19 @@ export async function PATCH(req: NextRequest, context: { params: any }) {
     if (status === "Approved") {
       if (assessment) {
         suggestion.assessment = assessment;
-        const sqcdme = assessment.sqcdme || {};
+        const sqcdmpe = assessment.sqcdmpe || {};
         bonusPoints = 
-          (assessment.levelProposal || 0) +
-          (assessment.keaslianTema || 0) +
-          (assessment.pengembanganIde || 0) +
-          (sqcdme.safety || 0) +
-          (sqcdme.quality || 0) +
-          (sqcdme.cost || 0) +
-          (sqcdme.delivery || 0) +
-          (sqcdme.moral || 0) +
-          (sqcdme.environment || 0);
+          (assessment.original || 0) +
+          (assessment.hoshinKanri || 0) +
+          (assessment.yokoten || 0) +
+          (sqcdmpe.safety || 0) +
+          (sqcdmpe.quality || 0) +
+          (sqcdmpe.cost || 0) +
+          (sqcdmpe.delivery || 0) +
+          (sqcdmpe.morale || 0) +
+          (sqcdmpe.productivity || 0) +
+          (sqcdmpe.environment || 0) +
+          (sqcdmpe.peopleDevelopment || 0);
       } else {
         // Fallback just in case
         bonusPoints = 0;

@@ -15,7 +15,8 @@ import {
   MoreVertical,
   ThumbsUp,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Download
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -29,6 +30,7 @@ export default function SuggestionDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [commentText, setCommentText] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const handleSubmitComment = async (e: React.FormEvent) => {
@@ -165,9 +167,42 @@ export default function SuggestionDetailPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="px-5 py-2.5 bg-white border border-gray-200 text-slate-600 font-bold rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2">
-            Print Laporan
-          </button>
+          {suggestion.status === "Approved" && (
+            <button 
+              onClick={async () => {
+                setIsDownloading(true);
+                try {
+                  const res = await fetch(`/api/suggestions/${suggestionId}/document`);
+                  if (!res.ok) {
+                    const err = await res.json();
+                    alert(err.error || "Gagal generate dokumen.");
+                    return;
+                  }
+                  const blob = await res.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  const disposition = res.headers.get("Content-Disposition");
+                  const match = disposition?.match(/filename="(.+)"/);
+                  a.download = match ? match[1] : `suggestion_${suggestionId}.xlsx`;
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                  window.URL.revokeObjectURL(url);
+                } catch (err) {
+                  console.error(err);
+                  alert("Terjadi kesalahan saat mengunduh dokumen.");
+                } finally {
+                  setIsDownloading(false);
+                }
+              }}
+              disabled={isDownloading}
+              className="px-5 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+            >
+              <Download className="w-4 h-4" />
+              {isDownloading ? "Mengunduh..." : "Download Dokumen"}
+            </button>
+          )}
           <button className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-slate-600 hover:bg-gray-50 transition-colors">
             <MoreVertical className="w-5 h-5" />
           </button>
@@ -227,6 +262,83 @@ export default function SuggestionDetailPage() {
                   {suggestion.costEffective?.explanation && (
                     <p>{suggestion.costEffective.explanation}</p>
                   )}
+                </div>
+              </div>
+            )}
+
+            {suggestion.status === "Approved" && suggestion.assessment && (
+              <div className="space-y-4 pt-6 border-t border-gray-100">
+                <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-amber-500" /> Detail Penilaian (Assessment)
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-3">
+                    <h4 className="text-sm font-bold text-slate-700 mb-2 border-b border-gray-200 pb-2">A. Kriteria Penilaian (Maks 60)</h4>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Original</span>
+                      <span className="font-bold text-slate-800">{suggestion.assessment.original || 0} <span className="text-gray-400 font-normal">/ 25</span></span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Hoshin Kanri</span>
+                      <span className="font-bold text-slate-800">{suggestion.assessment.hoshinKanri || 0} <span className="text-gray-400 font-normal">/ 20</span></span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Yokoten</span>
+                      <span className="font-bold text-slate-800">{suggestion.assessment.yokoten || 0} <span className="text-gray-400 font-normal">/ 15</span></span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm pt-2 border-t border-gray-200">
+                      <span className="text-gray-700 font-bold">Subtotal</span>
+                      <span className="font-bold text-indigo-600">{(suggestion.assessment.original || 0) + (suggestion.assessment.hoshinKanri || 0) + (suggestion.assessment.yokoten || 0)} <span className="text-gray-400 font-normal">/ 60</span></span>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-3">
+                    <h4 className="text-sm font-bold text-slate-700 mb-2 border-b border-gray-200 pb-2">B. Dampak SQCDMPE+P (Maks 40)</h4>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Safety (S)</span>
+                      <span className="font-bold text-slate-800">{suggestion.assessment.sqcdmpe?.safety || 0} <span className="text-gray-400 font-normal">/ 5</span></span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Quality (Q)</span>
+                      <span className="font-bold text-slate-800">{suggestion.assessment.sqcdmpe?.quality || 0} <span className="text-gray-400 font-normal">/ 5</span></span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Cost (C)</span>
+                      <span className="font-bold text-slate-800">{suggestion.assessment.sqcdmpe?.cost || 0} <span className="text-gray-400 font-normal">/ 5</span></span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Delivery (D)</span>
+                      <span className="font-bold text-slate-800">{suggestion.assessment.sqcdmpe?.delivery || 0} <span className="text-gray-400 font-normal">/ 5</span></span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Morale (M)</span>
+                      <span className="font-bold text-slate-800">{suggestion.assessment.sqcdmpe?.morale || 0} <span className="text-gray-400 font-normal">/ 5</span></span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Productivity (P)</span>
+                      <span className="font-bold text-slate-800">{suggestion.assessment.sqcdmpe?.productivity || 0} <span className="text-gray-400 font-normal">/ 5</span></span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Environment (E)</span>
+                      <span className="font-bold text-slate-800">{suggestion.assessment.sqcdmpe?.environment || 0} <span className="text-gray-400 font-normal">/ 5</span></span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">People Dev. (P)</span>
+                      <span className="font-bold text-slate-800">{suggestion.assessment.sqcdmpe?.peopleDevelopment || 0} <span className="text-gray-400 font-normal">/ 5</span></span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm pt-2 border-t border-gray-200">
+                      <span className="text-gray-700 font-bold">Subtotal</span>
+                      <span className="font-bold text-blue-600">
+                        {(suggestion.assessment.sqcdmpe?.safety || 0) + (suggestion.assessment.sqcdmpe?.quality || 0) + (suggestion.assessment.sqcdmpe?.cost || 0) + (suggestion.assessment.sqcdmpe?.delivery || 0) + (suggestion.assessment.sqcdmpe?.morale || 0) + (suggestion.assessment.sqcdmpe?.productivity || 0) + (suggestion.assessment.sqcdmpe?.environment || 0) + (suggestion.assessment.sqcdmpe?.peopleDevelopment || 0)} <span className="text-gray-400 font-normal">/ 40</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end pt-2">
+                   <div className="px-4 py-2 bg-amber-50 border border-amber-100 rounded-xl inline-flex items-center gap-2">
+                     <span className="text-sm text-amber-800 font-medium">Total Poin Evaluasi:</span>
+                     <span className="text-lg font-bold text-amber-600">{suggestion.pointsAwarded || 0} <span className="text-sm font-normal text-amber-400">/ 100</span></span>
+                   </div>
                 </div>
               </div>
             )}

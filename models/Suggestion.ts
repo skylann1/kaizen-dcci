@@ -24,16 +24,18 @@ export interface ISuggestion extends Document {
     createdAt: Date;
   }[];
   assessment?: {
-    levelProposal: number;
-    keaslianTema: number;
-    pengembanganIde: number;
-    sqcdme: {
+    original: number;
+    hoshinKanri: number;
+    yokoten: number;
+    sqcdmpe: {
       safety: number;
       quality: number;
       cost: number;
       delivery: number;
-      moral: number;
+      morale: number;
+      productivity: number;
       environment: number;
+      peopleDevelopment: number;
     };
   };
 }
@@ -97,16 +99,18 @@ const SuggestionSchema = new Schema<ISuggestion>(
       },
     ],
     assessment: {
-      levelProposal: { type: Number, default: 0, max: 20 },
-      keaslianTema: { type: Number, default: 0, max: 20 },
-      pengembanganIde: { type: Number, default: 0, max: 20 },
-      sqcdme: {
-        safety: { type: Number, default: 0 },
-        quality: { type: Number, default: 0 },
-        cost: { type: Number, default: 0 },
-        delivery: { type: Number, default: 0 },
-        moral: { type: Number, default: 0 },
-        environment: { type: Number, default: 0 },
+      original: { type: Number, default: 0, max: 25 },
+      hoshinKanri: { type: Number, default: 0, max: 20 },
+      yokoten: { type: Number, default: 0, max: 15 },
+      sqcdmpe: {
+        safety: { type: Number, default: 0, min: 0, max: 5 },
+        quality: { type: Number, default: 0, min: 0, max: 5 },
+        cost: { type: Number, default: 0, min: 0, max: 5 },
+        delivery: { type: Number, default: 0, min: 0, max: 5 },
+        morale: { type: Number, default: 0, min: 0, max: 5 },
+        productivity: { type: Number, default: 0, min: 0, max: 5 },
+        environment: { type: Number, default: 0, min: 0, max: 5 },
+        peopleDevelopment: { type: Number, default: 0, min: 0, max: 5 },
       },
     },
   },

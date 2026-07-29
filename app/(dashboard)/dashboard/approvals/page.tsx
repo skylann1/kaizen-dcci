@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, CheckCircle, XCircle, FileText, ChevronRight } from "lucide-react";
+import { Search, CheckCircle, XCircle, FileText, ChevronRight, Info, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function ApprovalsPage() {
   const [approvals, setApprovals] = useState<any[]>([]);
@@ -9,18 +9,21 @@ export default function ApprovalsPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const [assessmentModalOpen, setAssessmentModalOpen] = useState(false);
+  const [showGuidance, setShowGuidance] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<any>(null);
   const [assessmentData, setAssessmentData] = useState({
-    levelProposal: 0,
-    keaslianTema: 0,
-    pengembanganIde: 0,
-    sqcdme: {
+    original: 0,
+    hoshinKanri: 0,
+    yokoten: 0,
+    sqcdmpe: {
       safety: 0,
       quality: 0,
       cost: 0,
       delivery: 0,
-      moral: 0,
+      morale: 0,
+      productivity: 0,
       environment: 0,
+      peopleDevelopment: 0,
     },
     costImpact: 0,
   });
@@ -28,19 +31,22 @@ export default function ApprovalsPage() {
   const handleOpenAssessment = (item: any) => {
     setSelectedSuggestion(item);
     setAssessmentData({
-      levelProposal: 0,
-      keaslianTema: 0,
-      pengembanganIde: 0,
-      sqcdme: {
+      original: 0,
+      hoshinKanri: 0,
+      yokoten: 0,
+      sqcdmpe: {
         safety: 0,
         quality: 0,
         cost: 0,
         delivery: 0,
-        moral: 0,
+        morale: 0,
+        productivity: 0,
         environment: 0,
+        peopleDevelopment: 0,
       },
       costImpact: 0,
     });
+    setShowGuidance(false);
     setAssessmentModalOpen(true);
   };
 
@@ -77,25 +83,37 @@ export default function ApprovalsPage() {
     e.preventDefault();
     if (!selectedSuggestion) return;
     
-    const { levelProposal, keaslianTema, pengembanganIde, sqcdme, costImpact } = assessmentData;
-    const totalSQCDME = Object.values(sqcdme).reduce((a, b) => a + b, 0);
+    const { original, hoshinKanri, yokoten, sqcdmpe, costImpact } = assessmentData;
+    const totalKolom1 = original + hoshinKanri + yokoten;
+    const totalSQCDMPE = Object.values(sqcdmpe).reduce((a, b) => a + b, 0);
 
-    if (levelProposal > 20 || keaslianTema > 20 || pengembanganIde > 20) {
-      alert("Nilai maksimal untuk setiap kriteria Kolom 1 adalah 20.");
+    if (original > 25) {
+      alert("Nilai Original maksimal 25.");
       return;
     }
-    
-    if (totalSQCDME > 40) {
-      alert("Total nilai SQCDME tidak boleh melebihi 40 poin.");
+    if (hoshinKanri > 20) {
+      alert("Nilai Hoshin Kanri maksimal 20.");
+      return;
+    }
+    if (yokoten > 15) {
+      alert("Nilai Yokoten maksimal 15.");
+      return;
+    }
+    if (totalKolom1 > 60) {
+      alert("Total Kolom Penilaian #1 tidak boleh melebihi 60 poin.");
+      return;
+    }
+    if (totalSQCDMPE > 40) {
+      alert("Total Dampak Improvement (SQCDMPE+P) tidak boleh melebihi 40 poin.");
       return;
     }
 
     handleUpdateStatus(selectedSuggestion, "Approved", {
       assessment: {
-        levelProposal,
-        keaslianTema,
-        pengembanganIde,
-        sqcdme
+        original,
+        hoshinKanri,
+        yokoten,
+        sqcdmpe
       },
       costImpact
     });
@@ -115,6 +133,10 @@ export default function ApprovalsPage() {
         setIsLoading(false);
       });
   }, []);
+
+  const totalKolom1 = assessmentData.original + assessmentData.hoshinKanri + assessmentData.yokoten;
+  const totalSQCDMPE = Object.values(assessmentData.sqcdmpe).reduce((a, b) => a + b, 0);
+  const totalKeseluruhan = totalKolom1 + totalSQCDMPE;
 
   return (
     <div className="space-y-6">
@@ -258,19 +280,59 @@ export default function ApprovalsPage() {
             </div>
             
             <div className="p-6 overflow-y-auto max-h-[60vh]">
+              
+              {/* GUIDANCE TOGGLE */}
+              <div className="mb-6 bg-blue-50/50 rounded-xl border border-blue-100 overflow-hidden">
+                <button 
+                  type="button"
+                  onClick={() => setShowGuidance(!showGuidance)}
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-blue-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2 text-blue-800 font-bold">
+                    <Info className="w-5 h-5 text-blue-600" />
+                    Panduan & Matrix Penilaian
+                  </div>
+                  {showGuidance ? <ChevronUp className="w-5 h-5 text-blue-600" /> : <ChevronDown className="w-5 h-5 text-blue-600" />}
+                </button>
+                
+                {showGuidance && (
+                  <div className="p-4 pt-0 text-sm text-slate-700 space-y-4 border-t border-blue-100/50 mt-2">
+                    <div>
+                      <h5 className="font-bold mb-1">A. Kriteria Penilaian (Maks 60 Poin)</h5>
+                      <ul className="list-disc pl-5 space-y-1 text-gray-600">
+                        <li><strong>Original (Maks 25):</strong> Ide murni, baru, dan tingkat kreativitas tinggi.</li>
+                        <li><strong>Hoshin Kanri (Maks 20):</strong> Keselarasan ide dengan target/KPI perusahaan atau departemen.</li>
+                        <li><strong>Yokoten (Maks 15):</strong> Potensi atau hasil dari penyebaran/penerapan ide di area atau mesin lain.</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h5 className="font-bold mb-1">B. Dampak SQCDMPE+P (Skala 1-5)</h5>
+                      <p className="text-gray-600 mb-2">Pilih tingkat dampak improvement untuk setiap kategori berdasarkan skala berikut:</p>
+                      <div className="grid grid-cols-5 gap-2 text-center text-xs font-medium">
+                        <div className="bg-white p-2 rounded border border-gray-200">1: Sangat Rendah</div>
+                        <div className="bg-white p-2 rounded border border-gray-200">2: Rendah</div>
+                        <div className="bg-white p-2 rounded border border-gray-200">3: Sedang</div>
+                        <div className="bg-white p-2 rounded border border-gray-200">4: Tinggi</div>
+                        <div className="bg-white p-2 rounded border border-gray-200">5: Sangat Tinggi</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <form id="assessmentForm" onSubmit={handleSubmitAssessment} className="space-y-8">
                 
-                {/* Kolom #1 */}
+                {/* Kolom #1: Kriteria Penilaian (60 poin) */}
                 <div>
                   <h4 className="font-bold text-slate-800 mb-4 pb-2 border-b border-gray-100 flex justify-between items-end">
-                    <span>Kolom Penilaian #1</span>
-                    <span className="text-xs font-medium text-gray-500 font-sans">Total 60 (Masing-masing maks 20)</span>
+                    <span>A. Kriteria Penilaian</span>
+                    <span className="text-xs font-medium text-gray-500 font-sans">Total Maksimal 60 Poin</span>
                   </h4>
                   <div className="space-y-4">
                     {[
-                      { key: 'levelProposal', label: '1. Level Proposal', desc: 'Tingkat kemandirian dalam membuat tema' },
-                      { key: 'keaslianTema', label: '2. Keaslian Tema', desc: 'Keaslian ide dan kreatifitas improvement' },
-                      { key: 'pengembanganIde', label: '3. Pengembangan Ide', desc: 'Penyebaran horizontal dari ide' }
+                      { key: 'original', label: '1. Original', desc: 'Keaslian ide dan kreativitas improvement', max: 25 },
+                      { key: 'hoshinKanri', label: '2. Hoshin Kanri', desc: 'Tingkat keselarasan dengan target perusahaan', max: 20 },
+                      { key: 'yokoten', label: '3. Yokoten', desc: 'Hasil pengembangan atau penyebaran horizontal dari kaizen', max: 15 }
                     ].map(item => (
                       <div key={item.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
                         <div className="flex-1">
@@ -279,52 +341,67 @@ export default function ApprovalsPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <input 
-                            type="number" min="0" max="20" required
+                            type="number" min="0" max={item.max} required
                             className="w-20 text-center px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-bold text-slate-800"
                             value={(assessmentData as any)[item.key]}
                             onChange={(e) => setAssessmentData({...assessmentData, [item.key]: parseInt(e.target.value) || 0})}
                           />
-                          <span className="text-xs font-bold text-gray-400 uppercase">/ 20</span>
+                          <span className="text-xs font-bold text-gray-400 uppercase">/ {item.max}</span>
                         </div>
                       </div>
                     ))}
                   </div>
+                  <div className="mt-4 p-3 rounded-lg bg-indigo-50 border border-indigo-100 flex justify-between items-center">
+                    <span className="text-sm font-bold text-indigo-800">Subtotal Kriteria:</span>
+                    <span className={`text-lg font-bold font-display ${totalKolom1 > 60 ? 'text-red-500' : 'text-indigo-600'}`}>
+                      {totalKolom1} <span className="text-sm font-sans text-indigo-400">/ 60</span>
+                    </span>
+                  </div>
                 </div>
 
-                {/* Kolom #2 */}
+                {/* Kolom #2: Dampak Improvement SQCDMPE+P (40 poin) */}
                 <div>
                   <h4 className="font-bold text-slate-800 mb-4 pb-2 border-b border-gray-100 flex justify-between items-end">
-                    <span>Kolom Penilaian #2 (SQCDME)</span>
-                    <span className="text-xs font-medium text-gray-500 font-sans">Total Gabungan Maksimal 40</span>
+                    <span>B. Dampak Improvement (SQCDMPE + P)</span>
+                    <span className="text-xs font-medium text-gray-500 font-sans">Total Maksimal 40 Poin — Skala 1–5</span>
                   </h4>
                   
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {[
                       { key: 'safety', label: 'Safety (S)' },
                       { key: 'quality', label: 'Quality (Q)' },
                       { key: 'cost', label: 'Cost (C)' },
                       { key: 'delivery', label: 'Delivery (D)' },
-                      { key: 'moral', label: 'Moral (M)' },
-                      { key: 'environment', label: 'Environment (E)' }
+                      { key: 'morale', label: 'Morale (M)' },
+                      { key: 'productivity', label: 'Productivity (P)' },
+                      { key: 'environment', label: 'Environment (E)' },
+                      { key: 'peopleDevelopment', label: 'People Dev. (P)' }
                     ].map(item => (
                       <div key={item.key} className="flex flex-col p-3 rounded-xl bg-gray-50 border border-gray-100">
                         <label className="text-xs font-bold text-slate-700 mb-2">{item.label}</label>
-                        <input 
-                          type="number" min="0" max="40" required
-                          className="w-full text-center px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-bold text-slate-800"
-                          value={(assessmentData.sqcdme as any)[item.key]}
+                        <select
+                          required
+                          className="w-full text-center px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-bold text-slate-800 bg-white"
+                          value={(assessmentData.sqcdmpe as any)[item.key]}
                           onChange={(e) => setAssessmentData({
                             ...assessmentData, 
-                            sqcdme: { ...assessmentData.sqcdme, [item.key]: parseInt(e.target.value) || 0 }
+                            sqcdmpe: { ...assessmentData.sqcdmpe, [item.key]: parseInt(e.target.value) || 0 }
                           })}
-                        />
+                        >
+                          <option value={0}>0</option>
+                          <option value={1}>1</option>
+                          <option value={2}>2</option>
+                          <option value={3}>3</option>
+                          <option value={4}>4</option>
+                          <option value={5}>5</option>
+                        </select>
                       </div>
                     ))}
                   </div>
                   <div className="mt-4 p-3 rounded-lg bg-blue-50 border border-blue-100 flex justify-between items-center">
-                    <span className="text-sm font-bold text-blue-800">Total SQCDME:</span>
-                    <span className={`text-lg font-bold font-display ${Object.values(assessmentData.sqcdme).reduce((a,b)=>a+b,0) > 40 ? 'text-red-500' : 'text-primary'}`}>
-                      {Object.values(assessmentData.sqcdme).reduce((a,b)=>a+b,0)} <span className="text-sm font-sans text-blue-400">/ 40</span>
+                    <span className="text-sm font-bold text-blue-800">Subtotal SQCDMPE+P:</span>
+                    <span className={`text-lg font-bold font-display ${totalSQCDMPE > 40 ? 'text-red-500' : 'text-primary'}`}>
+                      {totalSQCDMPE} <span className="text-sm font-sans text-blue-400">/ 40</span>
                     </span>
                   </div>
                 </div>
@@ -349,7 +426,7 @@ export default function ApprovalsPage() {
             <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
               <div className="text-slate-800 font-bold">
                 Total Poin Keseluruhan: <span className="text-2xl text-primary font-display ml-2">
-                  {assessmentData.levelProposal + assessmentData.keaslianTema + assessmentData.pengembanganIde + Object.values(assessmentData.sqcdme).reduce((a,b)=>a+b,0)}
+                  {totalKeseluruhan}
                 </span>
                 <span className="text-sm text-gray-400 font-sans ml-1">/ 100</span>
               </div>
@@ -363,7 +440,7 @@ export default function ApprovalsPage() {
                 </button>
                 <button 
                   type="submit" form="assessmentForm"
-                  disabled={processingId === selectedSuggestion._id || Object.values(assessmentData.sqcdme).reduce((a,b)=>a+b,0) > 40}
+                  disabled={processingId === selectedSuggestion._id || totalSQCDMPE > 40 || totalKolom1 > 60}
                   className="px-6 py-2.5 rounded-xl font-bold text-white bg-primary hover:bg-blue-700 transition-all shadow-sm hover:shadow-md disabled:opacity-50 flex items-center gap-2"
                 >
                   <CheckCircle className="w-5 h-5" />
